@@ -1,0 +1,3 @@
+[submodule "pytorch_DANN"]
+	path = pytorch_DANN
+	url = https://github.com/MattPChoy/pytorch_DANN
