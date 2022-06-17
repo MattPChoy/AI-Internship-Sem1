@@ -1,3 +1,6 @@
 [submodule "pytorch_DANN"]
 	path = pytorch_DANN
 	url = https://github.com/MattPChoy/pytorch_DANN
+[submodule "MSDA"]
+	path = MSDA
+	url = https://github.com/MattPChoy/MSDA.git
