@@ -28,6 +28,16 @@ mooney = Dataset(
     extras="\\test"
 )
 
+"""
+For RSNA Pneumonia Detection Challenge from Kaggle
+"""
+rsna = Dataset(
+    "rsna-pneumonia-detection-challenge",
+    os.path.join(os.getcwd() + "\data"),
+    extras="\\test",
+    metadata_fn="stage_2_detailed_class_info.csv"
+)
+
 model = TSNE(n_components=2, init='pca')
 print(np.shape(mooney.images_flat))
 X_embedded = model.fit_transform(mooney.images_flat)
@@ -44,11 +54,71 @@ For Bokeh
 output_file("./bokeh_mooney.html")
 figure_size = 500
 
-p = figure(tools=[PanTool(), WheelZoomTool()],
+hover = HoverTool(
+    tooltips="""
+        <div>
+            <span style="font-size: 14px;">@session_id</span>
+            <br>
+            <span style="font-size: 10px;">SES: @SES</span>
+            <br>
+            <span style="font-size: 10px;">M/F: @SEX</span>
+            <br>
+            <span style="font-size: 10px; color=blue">AGE: @AGE</span>
+            <br>
+            <span style="font-size: 10px;">ASF: @ASF</span>
+            <br>
+            <span style="font-size: 10px;">CDR: @CDR</span>
+            <br>
+            <span style="font-size: 10px;">EDUC: @EDUC</span>
+            <br>
+            <span style="font-size: 10px;">HAND: @HAND</span>
+            <br>
+            <span style="font-size: 10px;">MMSE: @MMSE</span>
+            <br>
+            <span style="font-size: 10px;">eTIV: @eTIV</span>
+            <br>
+            <span style="font-size: 10px;">nWBV: @nWBV</span>
+        </div>
+        <div>
+            <img
+                src="file://@filepaths" alt="@base_filepaths" height="208" width="176"
+                style="float: center;"
+                border="2"
+            ></img>
+        </div>
+        """
+)
+
+p = figure(tools=[PanTool(), WheelZoomTool(), hover],
     plot_width=figure_size + 500, plot_height=figure_size,
     toolbar_location="above", title="Mooney Bokeh Analysis"
 )
 
-#p.circle('x_val', 'y_val', fill_color='color_data', source=source, line_color='black', size=10, alpha=0.7)
-p.circle(X_embedded[:,0], X_embedded[:,1])
+def clamp(x):
+    return max(0, min(x, 255))
+
+def set_colors(vals_for_color):
+    #print(vals_for_color)
+    min_val = min(vals_for_color); max_val = max(vals_for_color)
+    vals_for_color_norm = [(float(val) - min_val) / (max_val - min_val) for val in vals_for_color] #between 0 and 1
+    vals_for_color_norm = [val if val<1 else 0.9999 for val in vals_for_color_norm]
+    #print(vals_for_color_norm)
+    colors_unit = [plt.cm.seismic(val)[:3] for val in vals_for_color_norm]
+    #print(colors_unit)
+    colors_rgb = [(int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in colors_unit]
+    #print(colors_rgb)
+    colors_hex = ["#{0:02x}{1:02x}{2:02x}".format(clamp(color_rgb[0]), clamp(color_rgb[1]), clamp(color_rgb[2])) for color_rgb in colors_rgb]
+
+    #colors_hex = ['#' + struct.pack('BBB',*color_rgb).encode('hex') for color_rgb in colors_rgb]
+    return colors_hex
+
+
+df = pd.DataFrame.from_dict({
+    'x_val': X_embedded[:,0],
+    'y_val': X_embedded[:,1],
+})
+df['color'] = set_colors(mooney.labels)
+
+p.circle('x_val', 'y_val', fill_color='color', source=df, line_color='black', size=10, alpha=0.7)
+# p.circle(X_embedded[:,0], X_embedded[:,1])
 show(p)
