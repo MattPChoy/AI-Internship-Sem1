@@ -38,13 +38,16 @@ class Dataset:
                 images.append(dicom_image.pixel_array)
             return images
 
-    def __init__(self, dataset_name, abs_fp, metadata_fn=None, extras=None):
+    def __init__(self, dataset_name, abs_fp, metadata_fn=None, extras=None, class_header=None):
         """
         Construct a new instance of the dataset used for the Bokeh plot.
         :str dataset_name: Used to find the dataset files.
         :str abs_fp:          Absolute filepath to root dataset folder
         :str (extras):        Extra directories after dataset_name
         :str (metadata_fn):   Name of metadata file, in directory abs_fp
+        :str (class_header):  Tuple.
+                    class_header[0] is the name of the column containing the filename.
+                    class_header[1] is the name of the column containing the class.
 
         Will look for dataset source files at `abs_fp + dataset_name + extras`
         E.g., if abs_fp = "C:\\Users\\$username\\Documents\\CovidX\\data"
@@ -62,6 +65,10 @@ class Dataset:
             """
             Load without a metadata file, i.e. classes are divided using folders.
             """
+
+            if class_header != None:
+                raise Exception("Class header property not used when not loading from metadata file.")
+
             # List of strings, representing dataset classes.
             self.classes = os.listdir(basePath + extras)
             print("Classes are: " + str(self.classes))
@@ -97,43 +104,62 @@ class Dataset:
             """
             Load using a metadata file.
             """
-            metadata = pd.read_csv(basePath + "\\" + metadata_fn)
-            self.classes = metadata['class'].unique()
-            path = basePath + extras
-            print("Classes are: " + str(self.classes))
+            if (metadata_fn.endswith(".csv")):
+                metadata = pd.read_csv(basePath + "\\" + metadata_fn)
 
-            c_filenames = os.listdir(path)
+                self.classes = metadata[class_header[1]].unique()
+                path = basePath + extras
+                print("Classes are: " + str(self.classes))
 
-            if c_filenames[0].endswith(('.dcm', 'dicom')):
-                images = Dataset.load_dicom(path)
-                self.images = [
-                    cv2.resize(im, dsize=(224,224), interpolation=cv2.INTER_CUBIC) for im in images
-                ]
-                print(f"\tLoaded {len(self.images)} images from DICOM format from {path}.")
-            else:
-                # PIL Image
-                for filename in c_filenames:
-                    image_fp = path + "\\" + filename
-                    image = np.asarray(Image.open(path + "\\" + filename))
-                    image_crop = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
-                    self.images.append(image_crop)
-                    self.labels.append(class_num)
-            self.filenames += [basePath + "\\export\\" + fn.split(".")[0] + ".png" for fn in c_filenames]
+                c_filenames = os.listdir(path)
 
-            # Now need to add the labels.
-            classMap = dict()
-            for num, name in enumerate(self.classes):
-                classMap[name] = num
-            for fn in c_filenames:
-                # print(metadata.loc[metadata['patientId']==fn.split(".")[0]]['class'])
-                if fn.endswith((".dcm", ".dicom")):
-                    self.labels.append(
-                        metadata.loc[metadata['patientId']==fn.split(".")[0]]['class']
-                    )
+                if c_filenames[0].endswith(('.dcm', 'dicom')):
+                    images = Dataset.load_dicom(path)
+                    self.images = [
+                        cv2.resize(im, dsize=(224,224), interpolation=cv2.INTER_CUBIC) for im in images
+                    ]
+                    print(f"\tLoaded {len(self.images)} images from DICOM format from {path}.")
+                else:
+                    # PIL Image
+                    print("Loading from PIL ")
+                    for filename in c_filenames:
+                        image_fp = path + "\\" + filename
+                        image = np.asarray(Image.open(path + "\\" + filename))
+                        image_crop = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
+                        # Convert to grayscale
+                        if (len(np.shape(image_crop)) == 3):
+                            # That is, is a colour image
+                            # print("\tBefore converting to grayscale: " + str(np.shape(image_crop)))
+                            image_crop = cv2.cvtColor(image_crop, cv2.COLOR_BGR2GRAY)
+                            # print("\tAfter converting to grayscale:  " + str(np.shape(image_crop)))
+                        self.images.append(image_crop)
+                self.filenames += [basePath + "\\export\\" + fn.split(".")[0] + ".png" for fn in c_filenames]
+
+                # Now need to add the labels.
+                classMap = dict()
+                for num, name in enumerate(self.classes):
+                    classMap[name] = num
+                for fn in c_filenames:
+                    # print(metadata.loc[metadata['patientId']==fn.split(".")[0]]['class'])
+                    if fn.endswith((".dcm", ".dicom") + ('.jpg', '.jpeg', ".png")):
+                        print(class_header)
+                        self.labels.append(
+                            metadata.loc[metadata[class_header[0]]==fn.split(".")[0]][class_header[1]]
+                        )
+
         print("Number of labels: " + str(len(self.labels)))
 
         self.images_flat = []
+        i = 0
+        imlen = str(len(self.images))
         for im in self.images:
+            i += 1
+            if (i % 1000):
+                print(f"Loaded {i} of {imlen}")
+            # cv2.imshow("chung", im)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+            print("Reshaping image of size " + str(np.shape(im)))
             self.images_flat.append(np.reshape(im, (224*224)))
 
         print("Number of images: " + str(len(self.images_flat)))

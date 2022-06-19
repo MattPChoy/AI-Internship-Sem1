@@ -26,7 +26,8 @@ rsna = Dataset(
     "rsna-pneumonia-detection-challenge",
     os.path.join(os.getcwd() + "\data"),
     extras="\\train",
-    metadata_fn="stage_2_detailed_class_info.csv"
+    metadata_fn="stage_2_detailed_class_info.csv",
+    class_header=("patientId", "class")
 )
 print(f"RSNA has {len(rsna.images_flat)} samples")
 
@@ -36,16 +37,27 @@ For Mooney:
 mooney = Dataset(
     "mooney",
     os.path.join(os.getcwd() + "\data"),
-    extras="\\test"
+    extras="\\test",
 )
 print(f"Mooney has {len(mooney.images_flat)} samples")
+
+"""
+For Chung2
+"""
+chung2 = Dataset(
+    "chung2-actualmed",
+    os.path.join(os.getcwd() + "\data"),
+    extras="\\images\\",
+    metadata_fn="metadata.csv",
+    class_header=("imagename", "finding")
+)
 
 """
 TSNE
 """
 model = TSNE(n_components=2, init='pca')
 print(np.shape(mooney.images_flat))
-X_embedded = model.fit_transform(mooney.images_flat + rsna.images_flat)
+X_embedded = model.fit_transform(mooney.images_flat + rsna.images_flat + chung2.images_flat)
 print("Added " + str(len(X_embedded)) + " samples to the t-SNE plot")
 
 fig = plt.figure(figsize=(7,5))
@@ -99,10 +111,10 @@ print("Adding " + str(len(mooney.filenames + rsna.filenames)) + " to the datafra
 df = pd.DataFrame.from_dict({
     'x_val': X_embedded[:,0],
     'y_val': X_embedded[:,1],
-    'filepaths': mooney.filenames + rsna.filenames
+    'filepaths': mooney.filenames + rsna.filenames + chung2.filenames
 })
 # df['color'] = set_colors(mooney.labels + rsna.labels)
-df['color'] = set_colors([0] * len(mooney.labels) + [1] * len(rsna.labels))
+df['color'] = set_colors([0] * len(mooney.labels) + [1] * len(rsna.labels) + [2] * len(chung2.labels))
 
 p.circle('x_val', 'y_val', fill_color='color', source=df, line_color='black', size=10, alpha=0.7)
 # p.circle(X_embedded[:,0], X_embedded[:,1])
