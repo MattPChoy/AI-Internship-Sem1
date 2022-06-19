@@ -20,6 +20,17 @@ from bokeh.layouts import widgetbox, gridplot, column, row
 import pandas as pd
 
 """
+For RSNA Pneumonia Detection Challenge from Kaggle
+"""
+rsna = Dataset(
+    "rsna-pneumonia-detection-challenge",
+    os.path.join(os.getcwd() + "\data"),
+    extras="\\train",
+    metadata_fn="stage_2_detailed_class_info.csv"
+)
+print(f"RSNA has {len(rsna.images_flat)} samples")
+
+"""
 For Mooney:
 """
 mooney = Dataset(
@@ -27,20 +38,15 @@ mooney = Dataset(
     os.path.join(os.getcwd() + "\data"),
     extras="\\test"
 )
+print(f"Mooney has {len(mooney.images_flat)} samples")
 
 """
-For RSNA Pneumonia Detection Challenge from Kaggle
+TSNE
 """
-rsna = Dataset(
-    "rsna-pneumonia-detection-challenge",
-    os.path.join(os.getcwd() + "\data"),
-    extras="\\test",
-    metadata_fn="stage_2_detailed_class_info.csv"
-)
-
 model = TSNE(n_components=2, init='pca')
 print(np.shape(mooney.images_flat))
-X_embedded = model.fit_transform(mooney.images_flat)
+X_embedded = model.fit_transform(mooney.images_flat + rsna.images_flat)
+print("Added " + str(len(X_embedded)) + " samples to the t-SNE plot")
 
 fig = plt.figure(figsize=(7,5))
 ax = fig.add_subplot(111)
@@ -57,29 +63,6 @@ figure_size = 500
 hover = HoverTool(
     tooltips="""
         <div>
-            <span style="font-size: 14px;">@session_id</span>
-            <br>
-            <span style="font-size: 10px;">SES: @SES</span>
-            <br>
-            <span style="font-size: 10px;">M/F: @SEX</span>
-            <br>
-            <span style="font-size: 10px; color=blue">AGE: @AGE</span>
-            <br>
-            <span style="font-size: 10px;">ASF: @ASF</span>
-            <br>
-            <span style="font-size: 10px;">CDR: @CDR</span>
-            <br>
-            <span style="font-size: 10px;">EDUC: @EDUC</span>
-            <br>
-            <span style="font-size: 10px;">HAND: @HAND</span>
-            <br>
-            <span style="font-size: 10px;">MMSE: @MMSE</span>
-            <br>
-            <span style="font-size: 10px;">eTIV: @eTIV</span>
-            <br>
-            <span style="font-size: 10px;">nWBV: @nWBV</span>
-        </div>
-        <div>
             <img
                 src="file://@filepaths" alt="@base_filepaths" height="208" width="176"
                 style="float: center;"
@@ -91,7 +74,7 @@ hover = HoverTool(
 
 p = figure(tools=[PanTool(), WheelZoomTool(), hover],
     plot_width=figure_size + 500, plot_height=figure_size,
-    toolbar_location="above", title="Mooney Bokeh Analysis"
+    toolbar_location="above", title="Mooney vs RSNA Competition - t-SNE Analysis"
 )
 
 def clamp(x):
@@ -112,13 +95,16 @@ def set_colors(vals_for_color):
     #colors_hex = ['#' + struct.pack('BBB',*color_rgb).encode('hex') for color_rgb in colors_rgb]
     return colors_hex
 
-
+print("Adding " + str(len(mooney.filenames + rsna.filenames)) + " to the dataframe for plot.")
 df = pd.DataFrame.from_dict({
     'x_val': X_embedded[:,0],
     'y_val': X_embedded[:,1],
+    'filepaths': mooney.filenames + rsna.filenames
 })
-df['color'] = set_colors(mooney.labels)
+# df['color'] = set_colors(mooney.labels + rsna.labels)
+df['color'] = set_colors([0] * len(mooney.labels) + [1] * len(rsna.labels))
 
 p.circle('x_val', 'y_val', fill_color='color', source=df, line_color='black', size=10, alpha=0.7)
 # p.circle(X_embedded[:,0], X_embedded[:,1])
 show(p)
+# print(df.to_string())

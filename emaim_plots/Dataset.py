@@ -25,11 +25,13 @@ class Dataset:
         if (name != None):
             # Load single image
             dicom_image = pydicom.read_file(abs_fp + "/" + name)
-            return dicom_image
+            return dicom_image.pixel_array
 
         else:
             images = []
-            filenames = [fn for fn in os.listdir(os.getcwd()) if fn.endswith(('.dcm', '.dicom'))]
+            # print(os.listdir(abs_fp))
+            filenames = [fn for fn in os.listdir(abs_fp) if fn.endswith(('.dcm', '.dicom'))]
+            # print(f"DICOM Filenames: {filenames}")
 
             for fn in filenames:
                 dicom_image = pydicom.read_file(abs_fp + "/" + fn)
@@ -54,46 +56,84 @@ class Dataset:
         self.distributions = dict() # Dictionary of class names : counts
         self.labels = []
         self.images = []
+        self.filenames = []
 
         if metadata_fn == None:
+            """
+            Load without a metadata file, i.e. classes are divided using folders.
+            """
             # List of strings, representing dataset classes.
             self.classes = os.listdir(basePath + extras)
             print("Classes are: " + str(self.classes))
 
+            # Since classes are divided by folders, we want to add them class by class:
+            # Load the images
+            for class_num, c in enumerate(self.classes):
+                # For each class directory, we want to load the images:
+                classPath = basePath + extras + "\\" + c
+                c_filenames = os.listdir(classPath)
+
+                c_images = []
+
+                self.distributions[c] = len(c_filenames)
+
+                if c_filenames[0].endswith(('.dcm', 'dicom')):
+                    images = Dataset.load_dicom(classPath)
+                    print(f"Loaded {len(self.images)} images from DICOM format.")
+                    self.images = [
+                        cv2.resize(im, dsize=(224,224), interpolation=cv2.INTER_CUBIC) for im in images
+                    ]
+                else:
+                    # PIL Image
+                    for filename in c_filenames:
+                        image_fp = classPath + "\\" + filename
+                        image = np.asarray(Image.open(image_fp))
+                        image_crop = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
+                        self.images.append(image_crop)
+                        self.labels.append(class_num)
+                self.filenames += [classPath + "\\" + fn for fn in c_filenames]
+
         else:
+            """
+            Load using a metadata file.
+            """
             metadata = pd.read_csv(basePath + "\\" + metadata_fn)
             self.classes = metadata['class'].unique()
+            path = basePath + extras
             print("Classes are: " + str(self.classes))
 
-        # Load the images
-        for class_num, c in enumerate(self.classes):
-            # For each class directory, we want to load the images:
-            classPath = basePath + extras + "\\" + c
-            if metadata_fn == None:
-                c_filenames = os.listdir(classPath)
-            else:
-                c_filenames = os.listdir(basePath + extras)
-            c_images = []
-
-            self.distributions[c] = len(c_filenames)
+            c_filenames = os.listdir(path)
 
             if c_filenames[0].endswith(('.dcm', 'dicom')):
-                self.images = Dataset.load_dicom(abs_fp)
+                images = Dataset.load_dicom(path)
+                self.images = [
+                    cv2.resize(im, dsize=(224,224), interpolation=cv2.INTER_CUBIC) for im in images
+                ]
+                print(f"\tLoaded {len(self.images)} images from DICOM format from {path}.")
             else:
                 # PIL Image
                 for filename in c_filenames:
-                    if (metadata_fn) == None:
-                        image_fp = classPath + "\\" + filename
-                    else:
-                        image_fp = basePath + extras + "\\" + filename
-                    image = np.asarray(Image.open(classPath + "\\" + filename))
+                    image_fp = path + "\\" + filename
+                    image = np.asarray(Image.open(path + "\\" + filename))
                     image_crop = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
                     self.images.append(image_crop)
                     self.labels.append(class_num)
+            self.filenames += [basePath + "\\export\\" + fn.split(".")[0] + ".png" for fn in c_filenames]
+
+            # Now need to add the labels.
+            classMap = dict()
+            for num, name in enumerate(self.classes):
+                classMap[name] = num
+            for fn in c_filenames:
+                # print(metadata.loc[metadata['patientId']==fn.split(".")[0]]['class'])
+                if fn.endswith((".dcm", ".dicom")):
+                    self.labels.append(
+                        metadata.loc[metadata['patientId']==fn.split(".")[0]]['class']
+                    )
+        print("Number of labels: " + str(len(self.labels)))
+
         self.images_flat = []
-        # self.images_flat = np.reshape(self.images, (len(self.images), 224*224))
         for im in self.images:
             self.images_flat.append(np.reshape(im, (224*224)))
 
-            # plt.imshow(self.images[0])
-            # plt.show()
+        print("Number of images: " + str(len(self.images_flat)))
