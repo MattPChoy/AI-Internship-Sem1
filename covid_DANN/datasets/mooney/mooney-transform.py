@@ -30,7 +30,7 @@ def get_files(fp):
 
 for src in sources:
     with open(f"{src}_metadata.csv", "w") as metadata_file:
-        metadata_file.write("filename, class" + os.linesep)
+        metadata_file.write("filename,class" + os.linesep)
         path = os.getcwd() + "\\" + src
         print(f"Searching in {path}")
         # For test, train, validate:
@@ -39,7 +39,7 @@ for src in sources:
         for c in classes:
             print(f"Searching in {path}\\{c}")
             for fn in get_files(path + "\\" + c):
-                metadata_file.write(f"{fn}, {c}" + os.linesep)
+                metadata_file.write(f"{fn},{c}" + os.linesep)
 """
 with open("metadata.csv", "w") as metadata_file:
     # Write the header line
