@@ -27,10 +27,10 @@ def get_files(fp):
     return [fn for fn in os.listdir(fp) if os.path.isfile(fp + "\\" + fn)]
 
 
-with open("metadata.csv", "w") as metadata_file:
-    # Write the header line
-    metadata_file.write("filename, class" + os.linesep)
-    for src in sources:
+
+for src in sources:
+    with open(f"{src}_metadata.csv", "w") as metadata_file:
+        metadata_file.write("filename, class" + os.linesep)
         path = os.getcwd() + "\\" + src
         print(f"Searching in {path}")
         # For test, train, validate:
@@ -40,3 +40,18 @@ with open("metadata.csv", "w") as metadata_file:
             print(f"Searching in {path}\\{c}")
             for fn in get_files(path + "\\" + c):
                 metadata_file.write(f"{fn}, {c}" + os.linesep)
+"""
+with open("metadata.csv", "w") as metadata_file:
+    # Write the header line
+    metadata_file.write("filename, class, source" + os.linesep)
+    for src in sources:
+        path = os.getcwd() + "\\" + src
+        print(f"Searching in {path}")
+        # For test, train, validate:
+        classes = get_dirs(path)
+        print(f"Classes are: {classes}")
+        for c in classes:
+            print(f"Searching in {path}\\{c}")
+            for fn in get_files(path + "\\" + c):
+                metadata_file.write(f"{fn}, {c}, {src}" + os.linesep)
+"""

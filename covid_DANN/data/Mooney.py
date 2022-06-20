@@ -7,6 +7,9 @@ import os
 import cv2
 
 class Mooney(Loader):
+    """
+    Dataloader for Mooney dataset.
+    """
     MEAN = 0.5
     STDEV = 0.5
 
@@ -16,10 +19,9 @@ class Mooney(Loader):
 
 class MooneyDataset(Dataset):
     """
-    Downloaded from kaggle:
+    Subclass of PyTorch Dataset. Source downloaded from Kaggle.
     https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
     """
-
     def __init__(self, csv_file, root_dir, transform=None):
         """
         :str csv_file:  Path to the CSV file with annotations
