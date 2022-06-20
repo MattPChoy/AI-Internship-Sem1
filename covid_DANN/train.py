@@ -4,16 +4,16 @@ import utils
 import torch.optim as optim
 import torch.nn as nn
 import test
-import mnist
-import mnistm
+# import mnist
+# import mnistm
 from utils import save_model
 from utils import visualize
 from utils import set_model_mode
 import params
-
+import loaders
 # Source : 0, Target :1
-source_test_loader = mnist.mnist_test_loader
-target_test_loader = mnistm.mnistm_test_loader
+source_test_loader = loaders.source_test_loader
+target_test_loader = loaders.target_test_loader
 
 
 def source_only(encoder, classifier, source_train_loader, target_train_loader, save_name):
@@ -23,14 +23,14 @@ def source_only(encoder, classifier, source_train_loader, target_train_loader, s
         list(encoder.parameters()) +
         list(classifier.parameters()),
         lr=0.01, momentum=0.9)
-    
+
     for epoch in range(params.epochs):
         print('Epoch : {}'.format(epoch))
         set_model_mode('train', [encoder, classifier])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
+
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
             source_image, source_label = source_data
             p = float(batch_idx + start_steps) / total_steps
@@ -60,24 +60,24 @@ def source_only(encoder, classifier, source_train_loader, target_train_loader, s
 
 def dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name):
     print("DANN training")
-    
+
     classifier_criterion = nn.CrossEntropyLoss().cuda()
     discriminator_criterion = nn.CrossEntropyLoss().cuda()
-    
+
     optimizer = optim.SGD(
     list(encoder.parameters()) +
     list(classifier.parameters()) +
     list(discriminator.parameters()),
     lr=0.01,
     momentum=0.9)
-    
+
     for epoch in range(params.epochs):
         print('Epoch : {}'.format(epoch))
         set_model_mode('train', [encoder, classifier, discriminator])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
+
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
 
             source_image, source_label = source_data

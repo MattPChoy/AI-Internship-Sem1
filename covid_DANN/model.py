@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from utils import ReverseLayerF
 
-
 class Extractor(nn.Module):
     def __init__(self):
         super(Extractor, self).__init__()

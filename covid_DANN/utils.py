@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 from torch.autograd import Function
 from sklearn.manifold import TSNE
 import torch
-import mnist
-import mnistm
+# import mnist
+# import mnistm
 import itertools
 import os
-
+import loaders
 
 class ReverseLayerF(Function):
-
     @staticmethod
     def forward(ctx, x, alpha):
         ctx.alpha = alpha
@@ -99,8 +98,8 @@ def plot_embedding(X, y, d, training_mode, save_name):
 
 def visualize(encoder, training_mode, save_name):
     # Draw 512 samples in test_data
-    source_test_loader = mnist.mnist_test_loader
-    target_test_loader = mnistm.mnistm_test_loader
+    source_test_loader = loaders.source_test_loader
+    target_test_loader = loaders.target_test_loader
 
     # Get source_test samples
     source_label_list = []
@@ -154,8 +153,8 @@ def visualize(encoder, training_mode, save_name):
 
 
 def visualize_input():
-    source_test_loader = mnist.mnist_test_loader
-    target_test_loader = mnistm.mnistm_test_loader
+    source_test_loader = loaders.source_test_loader
+    target_test_loader = loaders.target_test_loader
 
     # Get source_test samples
     source_label_list = []
