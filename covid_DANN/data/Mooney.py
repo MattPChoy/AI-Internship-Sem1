@@ -6,7 +6,7 @@ import numpy as np
 import os
 import cv2
 
-class Mooney(Loader):
+class MooneyLoader(Loader):
     """
     Dataloader for Mooney dataset.
     """
@@ -32,6 +32,8 @@ class MooneyDataset(Dataset):
         self.transform = transform
         self.metadata = pd.read_csv(csv_file)
         self.root_dir = root_dir
+        self.classes = self.metadata['class'].unique()
+        self.class_map = {name : idx for idx, name in enumerate(self.classes)}
 
     def __len__(self):
         """
@@ -46,10 +48,15 @@ class MooneyDataset(Dataset):
         img_name = os.path.join(self.root_dir,
                                 self.metadata.iloc[idx, 0])
         image = cv2.imread(img_name)
+        image = cv2.resize(image, dsize=(224,224), interpolation=cv2.INTER_CUBIC)
         diagnosis = self.metadata.iloc[idx, 1:]
         sample = {'image': image, 'diagnosis': diagnosis, 'filename': img_name}
 
         if self.transform:
-            sample = self.transform(sample)
+            image = self.transform(image)
+        else:
+            raise Exception("Mooney - image not transformed to tensor - transform does not exist")
 
-        return sample
+        # return sample
+        assert type(image) == torch.Tensor, "Type of image is " + str(type(image))
+        return image, torch.tensor(self.class_map[str(diagnosis)])
