@@ -33,17 +33,17 @@ Since we don't have the classifications for the
 filenames = get_files(os.getcwd() + "\\" + 'train')
 print(len(filenames))
 with open(f"train_metadata.csv", "w") as metadata:
-    metadata.write("filename,class" + os.linesep)
+    metadata.write("filename,class\n")
 
     for file in filenames[:len(filenames)//2]:
         # Look in ./test and ./train
         fn = file.split(".")[0]
         # print(f"File {fn} of class {class_info[fn]}")
-        metadata.write(f"{file},{class_info[fn]}" + os.linesep)
+        metadata.write(f"{file},{class_info[fn]}\n")
 
 with open(f"test_metadata.csv", "w") as metadata:
-    metadata.write("filename,class" + os.linesep)
+    metadata.write("filename,class\n")
 
     for file in filenames[len(filenames)//2 + 1:]:
         fn = file.split(".")[0]
-        metadata.write(f"{file},{class_info[fn]}" + os.linesep)
+        metadata.write(f"{file},{class_info[fn]}\n")
