@@ -17,7 +17,8 @@ class Extractor(nn.Module):
 
     def forward(self, x):
         x = self.extractor(x)
-        x = x.view(-1, 3 * 28 * 28)
+        # x = x.view(-1, 3 * 28 * 28)
+        x = x.view(-1, 3 * 224 * 224)
         return x
 
 
@@ -25,7 +26,8 @@ class Classifier(nn.Module):
     def __init__(self):
         super(Classifier, self).__init__()
         self.classifier = nn.Sequential(
-            nn.Linear(in_features=3 * 28 * 28, out_features=100),
+            # nn.Linear(in_features=3 * 28 * 28, out_features=100),
+            nn.Linear(in_features=3 * 224 * 224, out_features=100),
             nn.ReLU(),
             nn.Linear(in_features=100, out_features=100),
             nn.ReLU(),
@@ -41,7 +43,7 @@ class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         self.discriminator = nn.Sequential(
-            nn.Linear(in_features=3 * 28 * 28, out_features=100),
+            nn.Linear(in_features=3 * 224 * 224, out_features=100),
             nn.ReLU(),
             nn.Linear(in_features=100, out_features=2)
         )
